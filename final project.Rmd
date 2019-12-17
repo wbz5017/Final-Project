@@ -24,6 +24,14 @@ Admission office always want to predict future students performance(GPA) in coll
 ```{r}
 gpa<- read.csv("projectdata.csv")
 head(gpa)
+genderindex<- read.csv("genderindex.csv")
+View(genderindex)
+
+#joining two data sets
+gpa <- 
+  gpa %>%
+  left_join(genderindex)
+head(gpa)
 ```
 ## basic graphics to see distributions of the data
 ```{r}
@@ -33,23 +41,23 @@ plot(mod1, type = "simple")
 
 
 ##female seems to have a higher buttom line but lower average than male, so I decide to analysis gender separately
-ggplot(gpa,aes(y=CML.GPA))+geom_boxplot()+facet_wrap(~GENDER)
+ggplot(gpa,aes(y=CML.GPA))+geom_boxplot()+facet_wrap(~sex)
 
 ## High school GPA seems to have some relationship with cumulative GPA
-ggplot(gpa,aes(HS.GPA,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(HS.GPA,CML.GPA))+geom_point()+facet_wrap(~sex)
 
 ## SAT MATH scores may have some relationship with cumulative GPA, but it is not clear in this graph
-ggplot(gpa,aes(SAT.MATH,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(SAT.MATH,CML.GPA))+geom_point()+facet_wrap(~sex)
 
 ## SAT VERB scores may have some relationship with cumulative GPA, but it is not clear in this graph
-ggplot(gpa,aes(SAT.VERB,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(SAT.VERB,CML.GPA))+geom_point()+facet_wrap(~sex)
 
 ##  evenly distributed with age, credit taking and hours studying, so these three variable will not be taking into account in this study
-ggplot(gpa,aes(AGE,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(AGE,CML.GPA))+geom_point()+facet_wrap(~sex)
 
-ggplot(gpa,aes(CREDITS,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(CREDITS,CML.GPA))+geom_point()+facet_wrap(~sex)
 
-ggplot(gpa,aes(HOURS,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+ggplot(gpa,aes(HOURS,CML.GPA))+geom_point()+facet_wrap(~sex)
 
 ```
 
@@ -58,8 +66,7 @@ ggplot(gpa,aes(HOURS,CML.GPA))+geom_point()+facet_wrap(~GENDER)
 #rearrange SAT score into three groups above 600 is High(3),below 600 but above
 gpa_mut<-gpa%>%
   mutate(satmath = ifelse(SAT.MATH>=600,"3",ifelse(SAT.MATH>=500,"2","1")))%>%
-  mutate(satverb = ifelse(SAT.VERB>=600,"3",ifelse(SAT.VERB>=500,"2","1")))%>%
-  mutate(sex = ifelse(GENDER == 1, "Male", "Female"))
+  mutate(satverb = ifelse(SAT.VERB>=600,"3",ifelse(SAT.VERB>=500,"2","1")))
   
 ggplot(gpa_mut,aes(HS.GPA,CML.GPA))+geom_point()+aes(colour=satmath,size = satverb)+scale_x_log10()+facet_wrap(~GENDER)
 
@@ -85,7 +92,6 @@ ggplot(gpa_summarise,aes(satmath,Male))+geom_point()+aes(size = satverb)
 ```{r}
 gpa_HS<-gpa%>%
   mutate(hsgpa = ifelse(HS.GPA>=3.5,"4",ifelse(HS.GPA>=2.5,"3",ifelse(HS.GPA>=1.5,"2","1"))))%>%
-  mutate(sex = ifelse(GENDER == 1, "Male", "Female"))%>%
   group_by(hsgpa,sex)%>%
   summarise(gpa =mean(CML.GPA))
 
