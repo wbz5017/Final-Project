@@ -90,8 +90,13 @@ ggplot(gpa_summarise,aes(satmath,Male))+geom_point()+aes(size = satverb)
 
 ## Data wrangling to analysis effect of high school GPA
 ```{r}
+# a function to transfer GPA from continuous to discrete levels 1,2,3,4 which correspond to 0-1.5, 1.5-2.5, 2.5-3.5, 3.5-4
+gpatransfer <- function(HS.GPA){
+  ifelse(HS.GPA>=3.5,"4",ifelse(HS.GPA>=2.5,"3",ifelse(HS.GPA>=1.5,"2","1")))
+}
+
 gpa_HS<-gpa%>%
-  mutate(hsgpa = ifelse(HS.GPA>=3.5,"4",ifelse(HS.GPA>=2.5,"3",ifelse(HS.GPA>=1.5,"2","1"))))%>%
+  mutate(hsgpa = gpatransfer(HS.GPA))%>%
   group_by(hsgpa,sex)%>%
   summarise(gpa =mean(CML.GPA))
 
