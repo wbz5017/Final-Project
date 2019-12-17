@@ -1,0 +1,102 @@
+---
+title: "STAT 184" 
+subtitle: "Final Project"
+author: "Weilun Zhang"
+output: html_notebook
+---
+
+# Indicators of GPA
+
+```{r include=FALSE}
+# clean up workspace environment
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+# all packages used for the assignment
+library(tidyverse)  # includes lots of data verbs like `group-by()` and `summarise()`
+library(mosaicData) # includes the `HELPrct data set 
+library(mosaic)
+library(DataComputing)
+```
+
+Admission office always want to predict future students performance(GPA) in college before they actually getting in. So they will need some indicators such that may have some correlation with students future grades.
+
+## Data Set
+```{r}
+gpa<- read.csv("projectdata.csv")
+head(gpa)
+```
+## basic graphics to see distributions of the data
+```{r}
+mod1 <- party::ctree(
+  CML.GPA ~ HS.GPA + SAT.MATH + SAT.VERB, data = gpa)
+plot(mod1, type = "simple")
+
+
+##female seems to have a higher buttom line but lower average than male, so I decide to analysis gender separately
+ggplot(gpa,aes(y=CML.GPA))+geom_boxplot()+facet_wrap(~GENDER)
+
+## High school GPA seems to have some relationship with cumulative GPA
+ggplot(gpa,aes(HS.GPA,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+## SAT MATH scores may have some relationship with cumulative GPA, but it is not clear in this graph
+ggplot(gpa,aes(SAT.MATH,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+## SAT VERB scores may have some relationship with cumulative GPA, but it is not clear in this graph
+ggplot(gpa,aes(SAT.VERB,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+##  evenly distributed with age, credit taking and hours studying, so these three variable will not be taking into account in this study
+ggplot(gpa,aes(AGE,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+ggplot(gpa,aes(CREDITS,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+ggplot(gpa,aes(HOURS,CML.GPA))+geom_point()+facet_wrap(~GENDER)
+
+```
+
+## data wrangling to analysis effect of SAT scores
+```{r}
+#rearrange SAT score into three groups above 600 is High(3),below 600 but above
+gpa_mut<-gpa%>%
+  mutate(satmath = ifelse(SAT.MATH>=600,"3",ifelse(SAT.MATH>=500,"2","1")))%>%
+  mutate(satverb = ifelse(SAT.VERB>=600,"3",ifelse(SAT.VERB>=500,"2","1")))%>%
+  mutate(sex = ifelse(GENDER == 1, "Male", "Female"))
+  
+ggplot(gpa_mut,aes(HS.GPA,CML.GPA))+geom_point()+aes(colour=satmath,size = satverb)+scale_x_log10()+facet_wrap(~GENDER)
+
+#the number of people getting low in SAT Math and High in SAT Verb is 0 for Male and 1 for Female, so this combination will not be taking into account
+gpa_number<-gpa_mut%>%  
+  group_by(satmath,satverb,sex)%>%
+  summarise(number = n())
+View(gpa_number)
+
+gpa_summarise<-gpa_mut%>%  
+  group_by(satmath,satverb,sex)%>%
+  summarise(gpa =mean(CML.GPA))%>%
+  spread(key = sex,value = gpa)
+View(gpa_summarise)
+
+# Both SAT Math and Verb seems to be good indicator for college GPA with Female students
+ggplot(gpa_summarise,aes(satmath,Female))+geom_point()+aes(size = satverb)
+# Only SAT Math seems to be good with Male student
+ggplot(gpa_summarise,aes(satmath,Male))+geom_point()+aes(size = satverb)
+```
+
+## Data wrangling to analysis effect of high school GPA
+```{r}
+gpa_HS<-gpa%>%
+  mutate(hsgpa = ifelse(HS.GPA>=3.5,"4",ifelse(HS.GPA>=2.5,"3",ifelse(HS.GPA>=1.5,"2","1"))))%>%
+  mutate(sex = ifelse(GENDER == 1, "Male", "Female"))%>%
+  group_by(hsgpa,sex)%>%
+  summarise(gpa =mean(CML.GPA))
+
+gpa_HS_spread<-gpa_HS%>%  
+  spread(key = sex,value = gpa)
+View(gpa_HS_spread)
+
+#except for the outlier(female with high school gpa lower than 1.5), high school gpa is a pretty good indicator for college performance
+ggplot(gpa_HS,aes(hsgpa,gpa))+geom_point()+facet_wrap(~sex)
+```
+
+## Conclusion
+
+High school GPA appears to be the best indicator of college performance. Both SAT Math and Verb seems to be good indicators for college GPA with Female students, but only SAT Math seems to be good with Male student.
